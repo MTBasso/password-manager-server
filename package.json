@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "server.ts",
   "scripts": {
-    "dev": "tsnd --respawn src/http/server.ts --transpileOnly --pretty --clear"
+    "dev": "tsnd --respawn src/http/server.ts --transpileOnly --pretty --clear",
+    "format": "biome format . --write",
+    "lint": "biome lint . --write"
   },
   "author": "",
   "license": "ISC",
