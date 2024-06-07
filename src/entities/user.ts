@@ -4,6 +4,7 @@ import {
   InternalServerError,
   isCustomError,
 } from '../errors/Error';
+import { Vault, type VaultProps } from './vault';
 
 export interface UserProps {
   username: string;
