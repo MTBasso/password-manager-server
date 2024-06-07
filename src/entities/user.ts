@@ -22,7 +22,7 @@ export class User {
     this.password = password;
   }
 
-  static create({username, email, password}: UserProps) {
+  static async create({username, email, password}: UserProps) {
     try {
       this.isValidEmail(email);
       this.isStrongPassword(password);
