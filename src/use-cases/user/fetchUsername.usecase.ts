@@ -6,7 +6,7 @@ export class FetchUserByUsernameUseCase {
 
   async execute(username: string) {
     try {
-      await this.userRepository.fetchByUsername(username)
+      return await this.userRepository.fetchByUsername(username)
     } catch (error) {
       if(isCustomError(error)) throw error;
       throw new InternalServerError();

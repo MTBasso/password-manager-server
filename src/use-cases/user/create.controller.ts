@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { BadRequestError, InternalServerError, isCustomError } from "../../errors/Error";
+import { userRepository } from "../../http/app";
 import { InMemoryUserRepository } from "../../repositories/user.inMemory";
 import { CreateUserUseCase } from "./create.usecase";
 
 export class CreateUserController {
   async handle(request: Request, response: Response): Promise<Response> {
-    const useCase = new CreateUserUseCase(new InMemoryUserRepository());
+    const useCase = new CreateUserUseCase(userRepository);
     try {
       const {username, email, password} = request.body;
       if(!username || !email || !password) throw new BadRequestError();
