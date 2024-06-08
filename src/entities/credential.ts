@@ -1,15 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { InternalServerError, isCustomError } from '../errors/Error';
 
-export class Vault {
+export class Credential {
   id: string = randomUUID();
-  userId: string;
+  vaultId: string;
   name: string;
+  login: string;
+  password: string;
 
-  constructor(name: string, userId: string) {
+  constructor(name: string, login: string, password: string, vaultId: string) {
     try {
-      this.userId = userId;
+      this.vaultId = vaultId;
       this.name = name;
+      this.login = login;
+      this.password = password;
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
