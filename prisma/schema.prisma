@@ -13,4 +13,13 @@ model User {
   email    String @unique
   password String
   secret   String
+  vault    Vault[]
+}
+
+model Vault {
+  id     String @id @map("_id")
+  name   String @unique
+  // credentials Credential[];
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  userId String 
 }

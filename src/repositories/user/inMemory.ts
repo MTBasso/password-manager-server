@@ -16,4 +16,10 @@ export class InMemoryUserRepository implements UserRepository {
     if (!fetchedUser) throw new NotFoundError('User not found');
     return fetchedUser;
   }
+
+  async fetchById(id: string): Promise<User> {
+    const fetchedUser = this.users.find((user) => user.id === id);
+    if (!fetchedUser) throw new NotFoundError('User not found');
+    return fetchedUser;
+  }
 }
