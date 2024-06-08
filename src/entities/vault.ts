@@ -1,27 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import type { User } from './user';
-
-export interface VaultProps {
-  name: string;
-  userId: string;
-}
-
-export interface VaultConstructorProps {
-  name: string;
-  user: User;
-}
+import { InternalServerError, isCustomError } from '../errors/Error';
 
 export class Vault {
-  id: string;
+  id: string = randomUUID();
   name: string;
-  // credentials?: Credential[]
-  user: User;
   userId: string;
 
-  constructor({ name, user }: VaultConstructorProps) {
-    this.id = randomUUID();
-    this.name = name;
-    this.user = user;
-    this.userId = user.id;
+  constructor(name: string, userId: string) {
+    try {
+      this.name = name;
+      this.userId = userId;
+    } catch (error) {
+      if (isCustomError(error)) throw error;
+      throw new InternalServerError();
+    }
   }
 }

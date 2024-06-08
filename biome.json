@@ -4,7 +4,10 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["dist/**"]
+    "ignore": [
+      "dist/**",
+      "coverage/**"
+    ]
   },
   "formatter": {
     "enabled": true,
