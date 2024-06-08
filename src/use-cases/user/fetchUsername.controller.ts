@@ -1,11 +1,13 @@
 import type { Request, Response } from 'express';
 import { BadRequestError, isCustomError } from '../../errors/Error';
-import { prismaUserRepository } from '../../http/app';
+import { localRepository } from '../../repositories/inMemory/';
 import { FetchUserByUsernameUseCase } from './fetchUsername.usecase';
 
 export class FetchUserByUsernameController {
   async handle(request: Request, response: Response): Promise<Response> {
-    const useCase = new FetchUserByUsernameUseCase(prismaUserRepository);
+    const useCase = new FetchUserByUsernameUseCase(
+      localRepository.userRepository,
+    );
     try {
       const username = request.body.username;
       if (!username) throw new BadRequestError();

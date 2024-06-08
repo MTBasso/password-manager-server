@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { InternalServerError, isCustomError } from '../errors/Error';
+import { activeRepository } from '../http/app';
 import { isStrongPassword, isValidEmail } from '../utils/validations';
 
 export interface UserProps {
@@ -14,6 +15,7 @@ export class User {
   email: string;
   password: string;
   secret: string;
+  private static repository = activeRepository;
 
   private constructor({ username, email, password }: UserProps) {
     this.id = randomUUID();
@@ -23,7 +25,7 @@ export class User {
     this.password = password;
   }
 
-  static async create({ username, email, password }: UserProps) {
+  static create({ username, email, password }: UserProps) {
     try {
       isValidEmail(email);
       isStrongPassword(password);

@@ -1,20 +1,20 @@
-import { Request, Response } from "express";
-import { BadRequestError, isCustomError } from "../../errors/Error";
-import { inMemoryVaultRepository } from "../../http/app";
-import { CreateVaultUseCase } from "./create.usecase";
+import type { Request, Response } from 'express';
+import { BadRequestError, isCustomError } from '../../errors/Error';
+import { localRepository } from '../../repositories/inMemory/';
+import { CreateVaultUseCase } from './create.usecase';
 
 export class CreateVaultController {
   async handle(request: Request, response: Response): Promise<Response> {
-    const useCase = new CreateVaultUseCase(inMemoryVaultRepository);
+    const useCase = new CreateVaultUseCase(localRepository.vaultRepository);
     try {
-      const {name, userId} = request.body;
-      if(!name || !userId) throw new BadRequestError();
-      const createdVault = await useCase.execute({name, userId});
+      const { name, userId } = request.body;
+      if (!name || !userId) throw new BadRequestError();
+      const createdVault = await useCase.execute({ name, userId });
       return response
         .status(201)
-        .json({message: 'Vault created successfully', vault: createdVault})
+        .json({ message: 'Vault created successfully', vault: createdVault });
     } catch (error) {
-      if(isCustomError(error)) 
+      if (isCustomError(error))
         return response.status(error.statusCode).json(error.message);
       return response.status(500).json({ message: 'Internal server error' });
     }

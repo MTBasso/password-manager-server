@@ -1,8 +1,6 @@
-import { Vault, VaultProps } from "../../entities/vault";
-import { UserRepository } from "../user/interface";
+import type { Vault } from '../../entities/vault';
 
 export interface VaultRepository {
   vaults?: Vault[];
-  userRepository: UserRepository;
   create({ name, userId }): Promise<Vault>;
 }
