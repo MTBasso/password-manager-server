@@ -1,9 +1,7 @@
-import type { Vault } from '@prisma/client';
-import type { User } from '../../entities/user';
+import type { User, UserProps } from '../../entities/user';
 
 export interface UserRepository {
   users?: User[];
-  create(user: User): Promise<User>;
+  create({ username, email, password }: UserProps): Promise<User>;
   fetchByUsername(username: string): Promise<User>;
-  deleteByUsername(username: string): Promise<void>;
 }

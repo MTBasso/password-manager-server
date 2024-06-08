@@ -1,10 +1,13 @@
-import { User, type UserProps } from '../../entities/user';
+import type { UserProps } from '../../entities/user';
 import { InternalServerError, isCustomError } from '../../errors/Error';
+import type { UserRepository } from '../../repositories/user/interface';
 
 export class CreateUserUseCase {
+  constructor(private userRepository: UserRepository) {}
+
   async execute({ username, email, password }: UserProps) {
     try {
-      return await User.create({
+      return await this.userRepository.create({
         username,
         email,
         password,
