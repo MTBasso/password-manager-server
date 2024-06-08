@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { CreateVaultController } from "../../use-cases/vault/create.controller";
+import { Router } from 'express';
+import { CreateVaultController } from '../../use-cases/vault/create.controller';
 
 export const vaultRouter = Router();
 

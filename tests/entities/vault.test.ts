@@ -1,25 +1,25 @@
-import { User, type UserProps } from '../../src/entities/user';
-import { Vault, type VaultConstructorProps } from '../../src/entities/vault';
+import { User } from '../../src/entities/user';
+import { Vault } from '../../src/entities/vault';
+import { localRepository } from '../repositories/inMemory';
 
 describe('Vault Entity', () => {
-  const validUserData: UserProps = {
+  const validUserData = {
     username: 'Jest',
     email: 'jest@test.com',
     password: 'JestPass123!',
   };
-  let validVaultData: VaultConstructorProps;
+  let createdUser: User;
 
-  beforeEach(() => {
-    const createdUser = User.create(validUserData);
-    validVaultData = {
-      name: 'Test Vault',
-      user: createdUser,
-    };
+  beforeAll(async () => {
+    const { username, email, password } = validUserData;
+    createdUser = await localRepository.user.save(
+      new User(username, email, password),
+    );
   });
 
   describe('constructor', () => {
     it('Should create a Vault successfully.', () => {
-      expect(new Vault(validVaultData)).toBeInstanceOf(Vault);
+      expect(new Vault('Vault Name', createdUser.id)).toBeInstanceOf(Vault);
     });
   });
 });
