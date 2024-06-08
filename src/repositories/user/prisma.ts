@@ -1,5 +1,5 @@
 import { prisma } from '../../../prisma';
-import { User, type UserProps } from '../../entities/user';
+import type { User } from '../../entities/user';
 import {
   ConflictError,
   InternalServerError,
@@ -9,24 +9,21 @@ import {
 import type { UserRepository } from './interface';
 
 export class PrismaUserRepository implements UserRepository {
-  async create({ username, email, password }: UserProps): Promise<User> {
+  async save(user: User): Promise<User> {
     try {
-      if (!(await this.verifyValidUsername(username)))
-        throw new ConflictError('Username already in use');
-      if (!(await this.verifyValidEmail(email)))
-        throw new ConflictError('Email already in use');
-      const data = await User.create({ username, email, password });
-      return await prisma.user.create({ data });
+      await this.verifyValidUsername(user.username);
+      await this.verifyValidEmail(user.email);
+      return await prisma.user.create({ data: user });
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
     }
   }
 
-  async fetchByUsername(username: string): Promise<User> {
+  async fetchById(id: string): Promise<User> {
     try {
       const fetchedUser = await prisma.user.findUnique({
-        where: { username },
+        where: { id },
       });
       if (!fetchedUser) throw new NotFoundError('User not found');
       return fetchedUser;
@@ -36,30 +33,32 @@ export class PrismaUserRepository implements UserRepository {
     }
   }
 
-  private async verifyValidEmail(email: string): Promise<boolean> {
-    try {
-      if (
-        await prisma.user.findUnique({
-          where: { email },
-        })
-      )
-        return false;
-      return true;
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+  async delete(id: string) {
+    await prisma.user.delete({ where: { id } });
   }
 
-  private async verifyValidUsername(username: string): Promise<boolean> {
+  private async verifyValidUsername(username: string) {
     try {
       if (
         await prisma.user.findUnique({
           where: { username },
         })
       )
-        return false;
-      return true;
+        throw new ConflictError('Username already in use');
+    } catch (error) {
+      if (isCustomError(error)) throw error;
+      throw new InternalServerError();
+    }
+  }
+
+  private async verifyValidEmail(email: string) {
+    try {
+      if (
+        await prisma.user.findUnique({
+          where: { email },
+        })
+      )
+        throw new ConflictError('Email already in use');
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();

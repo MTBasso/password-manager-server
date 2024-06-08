@@ -1,7 +1,8 @@
-import type { User, UserProps } from '../../entities/user';
+import type { User } from '../../entities/user';
 
 export interface UserRepository {
   users?: User[];
-  create({ username, email, password }: UserProps): Promise<User>;
-  fetchByUsername(username: string): Promise<User>;
+  save(user: User): Promise<User>;
+  fetchById(id: string): Promise<User>;
+  delete(id: string): Promise<void>;
 }

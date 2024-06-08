@@ -1,18 +1,13 @@
-import { VaultProps } from "../../entities/vault";
-import { InternalServerError, isCustomError } from "../../errors/Error";
-import { VaultRepository } from "../../repositories/vault/interface";
+import type { Vault } from '../../entities/vault';
+import { InternalServerError, isCustomError } from '../../errors/Error';
+import { prismaRepository } from '../../repositories/prisma';
 
 export class CreateVaultUseCase {
-  constructor(private vaultRepository: VaultRepository) {}
-
-  async execute({name, userId}: VaultProps) {
+  async execute(vault: Vault) {
     try {
-      return await this.vaultRepository.create({
-        name, 
-        userId
-      });
+      return await prismaRepository.vault.save(vault);
     } catch (error) {
-      if(isCustomError(error)) throw error;
+      if (isCustomError(error)) throw error;
       throw new InternalServerError();
     }
   }

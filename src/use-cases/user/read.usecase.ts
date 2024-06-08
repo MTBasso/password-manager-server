@@ -1,11 +1,10 @@
-import type { User } from '../../entities/user';
 import { InternalServerError, isCustomError } from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
-export class CreateUserUseCase {
-  async execute(user: User): Promise<User> {
+export class ReadUserUseCase {
+  async execute(id: string) {
     try {
-      return await prismaRepository.user.save(user);
+      return await prismaRepository.user.fetchById(id);
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
