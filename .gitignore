@@ -2,5 +2,4 @@
 node_modules
 yarn
 password-manager/
-jest.config.ts
 coverage/

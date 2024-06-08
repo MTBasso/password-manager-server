@@ -6,7 +6,7 @@ export class InMemoryUserRepository implements UserRepository {
   users: User[] = [];
 
   async create(props: UserProps): Promise<User> {
-    const createdUser = await User.create(props);
+    const createdUser = User.create(props);
     this.users.push(createdUser);
     return createdUser;
   }
