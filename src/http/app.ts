@@ -6,8 +6,6 @@ import { vaultRouter } from './routers/vault';
 
 export const app = express();
 
-export const activeRepository = localRepository;
-
 app.use(express.json());
 
 app.use('/user', userRouter);

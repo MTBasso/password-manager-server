@@ -1,18 +1,15 @@
-import { VaultProps } from "../../entities/vault";
-import { InternalServerError, isCustomError } from "../../errors/Error";
-import { VaultRepository } from "../../repositories/vault/interface";
+import { Vault, type VaultProps } from '../../entities/vault';
+import { InternalServerError, isCustomError } from '../../errors/Error';
 
 export class CreateVaultUseCase {
-  constructor(private vaultRepository: VaultRepository) {}
-
-  async execute({name, userId}: VaultProps) {
+  async execute({ name, userId }: VaultProps) {
     try {
-      return await this.vaultRepository.create({
-        name, 
-        userId
+      return await Vault.create({
+        name,
+        userId,
       });
     } catch (error) {
-      if(isCustomError(error)) throw error;
+      if (isCustomError(error)) throw error;
       throw new InternalServerError();
     }
   }

@@ -1,11 +1,10 @@
 import type { Request, Response } from 'express';
 import { BadRequestError, isCustomError } from '../../errors/Error';
-import { localRepository } from '../../repositories/inMemory/';
 import { CreateVaultUseCase } from './create.usecase';
 
 export class CreateVaultController {
   async handle(request: Request, response: Response): Promise<Response> {
-    const useCase = new CreateVaultUseCase(localRepository.vaultRepository);
+    const useCase = new CreateVaultUseCase();
     try {
       const { name, userId } = request.body;
       if (!name || !userId) throw new BadRequestError();
