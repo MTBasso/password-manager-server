@@ -32,6 +32,18 @@ export class PrismaCredentialRepository implements CredentialRepository {
     }
   }
 
+  async listByVaultId(vaultId: string): Promise<Credential[]> {
+    try {
+      const fetchedCredentialList = await prisma.credential.findMany({
+        where: { vaultId },
+      });
+      return fetchedCredentialList;
+    } catch (error) {
+      if (isCustomError(error)) throw error;
+      throw new InternalServerError();
+    }
+  }
+
   private async verifyNonConflictingName(name: string) {
     try {
       if (

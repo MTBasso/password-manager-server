@@ -31,6 +31,18 @@ export class InMemoryCredentialRepository implements CredentialRepository {
     return fetchedCredential;
   }
 
+  async listByVaultId(vaultId: string): Promise<Credential[]> {
+    try {
+      await localRepository.vault.fetchById(vaultId);
+      return this.credentials.filter(
+        (credential: Credential) => credential.vaultId === vaultId,
+      );
+    } catch (error) {
+      if (isCustomError(error)) throw error;
+      throw new InternalServerError();
+    }
+  }
+
   private verifyNonConflictingName(name: string, vaultId: string) {
     if (
       this.credentials.some(
