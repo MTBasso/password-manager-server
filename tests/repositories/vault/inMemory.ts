@@ -2,6 +2,7 @@ import type { Vault } from '../../../src/entities/vault';
 import {
   ConflictError,
   InternalServerError,
+  NotFoundError,
   isCustomError,
 } from '../../../src/errors/Error';
 import type { VaultRepository } from '../../../src/repositories/vault/interface';
@@ -20,6 +21,12 @@ export class InMemoryVaultRepository implements VaultRepository {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
     }
+  }
+
+  async fetchById(id: string): Promise<Vault> {
+    const fetchedVault = this.vaults.find((vault: Vault) => vault.id === id);
+    if (!fetchedVault) throw new NotFoundError('Vault not found');
+    return fetchedVault;
   }
 
   private verifyNonConflictingName(name: string) {
