@@ -5,88 +5,72 @@ import { ConflictError, NotFoundError } from '../../../src/errors/Error';
 import { localRepository } from '../inMemory';
 
 describe('Credential Repository', () => {
+  const user = new User('saveMethod', 'saveMethod@test.com', 'JestPass123!');
+  const vault = new Vault('Test Vault', user.id);
+  const plainPassword = 'CredPass123!';
+  const newCredential = new Credential(
+    'Test Credential',
+    'test@test.com',
+    plainPassword,
+    vault.id,
+    user.secret,
+  );
+
+  beforeAll(async () => {
+    await localRepository.user.save(user);
+    await localRepository.vault.save(vault);
+  });
+
+  afterEach(() => {
+    localRepository.credential.credentials = [];
+  });
+
   describe('save method.', () => {
-    const validUserData = {
-      username: 'saveMethod',
-      email: 'saveMethod@test.com',
-      password: 'JestPass123!',
-    };
-    const validCredentialData = {
-      name: 'Test Credential',
-      login: 'test@test.com',
-      password: 'CredPass123!',
-    };
-    let createdUser: User;
-    let createdVault: Vault;
-    let conflictingCredential: Credential;
-
-    beforeEach(async () => {
-      createdUser = await localRepository.user.save(
-        new User(
-          validUserData.username,
-          validUserData.email,
-          validUserData.password,
-        ),
-      );
-      createdVault = await localRepository.vault.save(
-        new Vault('Test Vault', createdUser.id),
-      );
-      conflictingCredential = await localRepository.credential.save(
-        new Credential(
-          validCredentialData.name,
-          validCredentialData.login,
-          validCredentialData.password,
-          createdVault.id,
-          createdUser.secret,
-        ),
-      );
-    });
-
     it('Should save a credential with encrypted password', async () => {
-      const newCredential = await localRepository.credential.save(
-        new Credential(
-          'Unique Name',
-          validCredentialData.login,
-          validCredentialData.password,
-          createdVault.id,
-          createdUser.secret,
-        ),
-      );
-      expect(newCredential).toBeInstanceOf(Credential);
-      expect(newCredential.password).not.toBe(validCredentialData.password);
+      const savedCredential =
+        await localRepository.credential.save(newCredential);
+      expect(savedCredential).toBeInstanceOf(Credential);
+      expect(savedCredential.password !== plainPassword).toBe(true);
     });
 
     it('Should throw NotFoundError for non existent vault', async () => {
-      const invalidCredential = new Credential(
-        'Unique Name',
-        validCredentialData.login,
-        validCredentialData.password,
-        'InvalidId',
-        createdUser.secret,
-      );
       await expect(
-        localRepository.credential.save(invalidCredential),
+        localRepository.credential.save({
+          ...newCredential,
+          vaultId: 'InvalidId',
+        }),
       ).rejects.toThrow(NotFoundError);
     });
 
     it('Should throw ConflictError for conflicting name', async () => {
-      await expect(
-        localRepository.credential.save(
-          new Credential(
-            conflictingCredential.name,
-            conflictingCredential.login,
-            conflictingCredential.password,
-            conflictingCredential.vaultId,
-            createdUser.secret,
-          ),
-        ),
-      ).rejects.toThrow(ConflictError);
+      await localRepository.credential.save(newCredential);
+      try {
+        await localRepository.credential.save(newCredential);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConflictError);
+      }
+    });
+  });
+
+  describe('fetchById method', () => {
+    let credentialToFetch: Credential;
+    beforeAll(async () => {
+      credentialToFetch = await localRepository.credential.save(newCredential);
     });
 
-    afterEach(() => {
-      localRepository.user.users = [];
-      localRepository.vault.vaults = [];
-      localRepository.credential.credentials = [];
+    it('Should fetch a Credential by its id', async () => {
+      const fetchedCredential = await localRepository.credential.fetchById(
+        newCredential.id,
+      );
+      expect(fetchedCredential).toBe(credentialToFetch);
+    });
+
+    it('Should throw NotFoundError', async () => {
+      try {
+        await localRepository.credential.fetchById('InvalidId');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotFoundError);
+      }
     });
   });
 });

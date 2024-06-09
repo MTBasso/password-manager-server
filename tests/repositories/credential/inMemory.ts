@@ -2,6 +2,7 @@ import type { Credential } from '../../../src/entities/credential';
 import {
   ConflictError,
   InternalServerError,
+  NotFoundError,
   isCustomError,
 } from '../../../src/errors/Error';
 import type { CredentialRepository } from '../../../src/repositories/credential/interface';
@@ -20,6 +21,14 @@ export class InMemoryCredentialRepository implements CredentialRepository {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
     }
+  }
+
+  async fetchById(id: string): Promise<Credential> {
+    const fetchedCredential = this.credentials.find(
+      (credential: Credential) => credential.id === id,
+    );
+    if (!fetchedCredential) throw new NotFoundError('Credential not found');
+    return fetchedCredential;
   }
 
   private verifyNonConflictingName(name: string, vaultId: string) {

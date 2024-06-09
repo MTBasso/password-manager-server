@@ -29,6 +29,16 @@ export class InMemoryVaultRepository implements VaultRepository {
     return fetchedVault;
   }
 
+  async listByUserId(userId: string): Promise<Vault[]> {
+    try {
+      await localRepository.user.fetchById(userId);
+      return this.vaults.filter((vault: Vault) => vault.userId === userId);
+    } catch (error) {
+      if (isCustomError(error)) throw error;
+      throw new InternalServerError();
+    }
+  }
+
   private verifyNonConflictingName(name: string) {
     if (this.vaults.some((vault: Vault) => vault.name === name))
       throw new ConflictError('This user already has a vault with this name');

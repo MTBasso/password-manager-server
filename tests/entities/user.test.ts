@@ -9,14 +9,23 @@ describe('User Entity', () => {
   };
 
   describe('Constructor', () => {
-    const { username, email, password } = validUserData;
     it('Should create a User successfully.', () => {
-      expect(new User(username, email, password)).toBeInstanceOf(User);
+      expect(
+        new User(
+          validUserData.username,
+          validUserData.email,
+          validUserData.password,
+        ),
+      ).toBeInstanceOf(User);
     });
 
     it('Should throw BadRequestError for invalid email.', () => {
       try {
-        const user = new User(username, 'invalidEmail', password);
+        const user = new User(
+          validUserData.username,
+          'invalidEmail',
+          validUserData.password,
+        );
         if (user) fail('No user expected');
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestError);
@@ -26,7 +35,11 @@ describe('User Entity', () => {
 
     it('Should throw BadRequestError for weak password.', () => {
       try {
-        const user = new User(username, email, 'weakPassword');
+        const user = new User(
+          validUserData.username,
+          validUserData.email,
+          'weakPassword',
+        );
         if (user) fail('No User expected');
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestError);

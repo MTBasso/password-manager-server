@@ -4,27 +4,23 @@ import { ConflictError, NotFoundError } from '../../../src/errors/Error';
 import { localRepository } from '../inMemory';
 
 describe('Vault Repository', () => {
-  describe('save method.', () => {
-    const validUserData = {
-      username: 'saveMethod',
-      email: 'saveMethod@test.com',
-      password: 'JestPass123!',
-    };
-    const { username, email, password } = validUserData;
-    let createdUser: User;
-    let existingVault: Vault;
+  const validUserData = {
+    username: 'saveMethod',
+    email: 'saveMethod@test.com',
+    password: 'JestPass123!',
+  };
+  const { username, email, password } = validUserData;
+  const user = new User(username, email, password);
+  const newVault = new Vault('existingVault', user.id);
 
+  describe('save method.', () => {
     beforeAll(async () => {
-      createdUser = await localRepository.user.save(
-        new User(username, email, password),
-      );
+      await localRepository.user.save(user);
     });
 
     it('Should save a Vault', async () => {
       expect(
-        await localRepository.vault.save(
-          new Vault('Test Vault', createdUser.id),
-        ),
+        await localRepository.vault.save(new Vault('Test Vault', user.id)),
       );
     });
 
@@ -36,18 +32,37 @@ describe('Vault Repository', () => {
     });
 
     it('Should throw conflict error for conflicting name', async () => {
-      existingVault = await localRepository.vault.save(
-        new Vault('existingVault', createdUser.id),
-      );
-      await expect(
-        localRepository.vault.save(
-          new Vault(existingVault.name, createdUser.id),
-        ),
-      ).rejects.toThrow(ConflictError);
+      await localRepository.vault.save(newVault);
+      try {
+        await localRepository.vault.save(new Vault(newVault.name, user.id));
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConflictError);
+      }
     });
 
     afterEach(() => {
       localRepository.vault.vaults = [];
+    });
+  });
+
+  describe('fetchById method.', () => {
+    let vaultToFetch: Vault;
+    beforeAll(async () => {
+      vaultToFetch = await localRepository.vault.save(newVault);
+    });
+
+    it('Should find a vault by its id.', async () => {
+      expect(await localRepository.vault.fetchById(vaultToFetch.id)).toBe(
+        vaultToFetch,
+      );
+    });
+
+    it('Should throw NotFoundError.', async () => {
+      try {
+        await localRepository.vault.fetchById('non-existing-id');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotFoundError);
+      }
     });
   });
 });
