@@ -20,7 +20,7 @@ export class CreateVaultController {
         .json({ message: 'Vault created successfully', vault: createdVault });
     } catch (error) {
       if (isCustomError(error))
-        return response.status(error.statusCode).json(error.message);
+        return response.status(error.statusCode).json({ error: error.message });
       return response.status(500).json({ message: 'Internal server error' });
     }
   };

@@ -1,18 +1,17 @@
 import type { Request, Response } from 'express';
 import { BadRequestError, isCustomError } from '../../errors/Error';
-import { ListCredentialsUseCase } from './list.usecase';
+import { UpdateVaultUseCase } from './update.usecase';
 
-export class ListCredentialsController {
+export class UpdateVaultController {
   handle = async (request: Request, response: Response): Promise<Response> => {
-    const useCase = new ListCredentialsUseCase();
+    const useCase = new UpdateVaultUseCase();
     try {
       const vaultId = request.params.vaultId;
-      if (!vaultId) throw new BadRequestError();
-      const fetchedCredentialList = await useCase.execute(vaultId);
-      return response.status(200).json({
-        message: 'Credentials listed successfully',
-        credentials: fetchedCredentialList,
-      });
+      if (!request.body.name) throw new BadRequestError('Name is required');
+      const updatedVault = await useCase.execute(vaultId, request.body.name);
+      return response
+        .status(200)
+        .json({ message: 'Vault updated successfully', vault: updatedVault });
     } catch (error) {
       if (isCustomError(error))
         return response.status(error.statusCode).json({ error: error.message });

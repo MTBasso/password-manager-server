@@ -18,7 +18,7 @@ model User {
 
 model Vault {
   id     String @id @map("_id")
-  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
   userId String 
   name   String @unique
   credential Credential[]
@@ -26,7 +26,7 @@ model Vault {
 
 model Credential {
   id String @id @map("_id")
-  Vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   vaultId String
   name String @unique
   login String

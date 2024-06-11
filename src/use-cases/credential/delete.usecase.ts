@@ -1,11 +1,10 @@
 import { InternalServerError, isCustomError } from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
-export class ListCredentialsUseCase {
-  async execute(vaultId: string) {
+export class DeleteCredentialUseCase {
+  async execute(id: string) {
     try {
-      await prismaRepository.vault.fetchById(vaultId);
-      return await prismaRepository.credential.listByVaultId(vaultId);
+      return await prismaRepository.credential.delete(id);
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();

@@ -6,13 +6,22 @@ import {
   NotFoundError,
   isCustomError,
 } from '../../errors/Error';
+import { encryptPassword } from '../../utils/encryption';
 import type { CredentialRepository } from './interface';
 
 export class PrismaCredentialRepository implements CredentialRepository {
   async save(credential: Credential): Promise<Credential> {
     try {
       await this.verifyNonConflictingName(credential.name);
-      return await prisma.credential.create({ data: credential });
+      return await prisma.credential.create({
+        data: {
+          id: credential.id,
+          name: credential.name,
+          login: credential.login,
+          password: credential.password,
+          vaultId: credential.vaultId,
+        },
+      });
     } catch (error) {
       if (isCustomError(error)) throw error;
       throw new InternalServerError();
@@ -44,19 +53,40 @@ export class PrismaCredentialRepository implements CredentialRepository {
     }
   }
 
+  async update(id: string, data: Partial<Credential>): Promise<Credential> {
+    if (!(await this.fetchById(id)))
+      throw new NotFoundError('Credential not found');
+    const parentVault = await prisma.vault.findUnique({
+      where: { id: data.vaultId },
+    });
+    if (!parentVault)
+      throw new NotFoundError('This Credential vault does not exist anymore');
+    const parentUser = await prisma.user.findUnique({
+      where: { id: parentVault.userId },
+    });
+    if (!parentUser)
+      throw new NotFoundError('This Credential user does not exist anymore');
+    if (data.name && (await this.verifyNonConflictingName(data.name)))
+      throw new ConflictError(
+        'This vault already has a credential with this name',
+      );
+    if (data.password)
+      data.password = encryptPassword(data.password, parentUser.secret);
+    return await prisma.credential.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<void> {
+    if (!(await this.fetchById(id)))
+      throw new NotFoundError('Credential not found');
+    await prisma.credential.delete({ where: { id } });
+  }
+
   private async verifyNonConflictingName(name: string) {
-    try {
-      if (
-        await prisma.credential.findFirst({
-          where: { name: name },
-        })
-      )
-        throw new ConflictError(
-          'This vault already has a credential with this name',
-        );
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    if (
+      await prisma.credential.findFirst({
+        where: { name: name },
+      })
+    )
+      return true;
   }
 }
