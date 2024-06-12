@@ -1,4 +1,5 @@
 import { compare, hash } from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../../../prisma';
 import { User } from '../../entities/user';
 import type { Vault } from '../../entities/vault';
@@ -6,13 +7,16 @@ import {
   BadRequestError,
   ConflictError,
   NotFoundError,
+  UnauthorizedError,
 } from '../../errors/Error';
 import type { UserRepository } from './interface';
 
+export type loginResponse = { token: string; userId: string };
+
 export class PrismaUserRepository implements UserRepository {
   async save(user: User): Promise<User> {
-    await this.verifyValidUsername(user.username);
-    await this.verifyValidEmail(user.email);
+    await this.checkUsernameConflict(user.username);
+    await this.checkEmailConflict(user.email);
     return await prisma.user.create({
       data: {
         id: user.id,
@@ -22,6 +26,17 @@ export class PrismaUserRepository implements UserRepository {
         secret: user.secret,
       },
     });
+  }
+
+  async login(email: string, password: string): Promise<loginResponse> {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundError('User not found');
+    if (!(await this.compareHash(password, user.password)))
+      throw new UnauthorizedError('Password does not match');
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET ?? '', {
+      expiresIn: '1h',
+    });
+    return { token, userId: user.id };
   }
 
   async fetchById(id: string): Promise<User> {
@@ -34,9 +49,9 @@ export class PrismaUserRepository implements UserRepository {
 
   async update(id: string, data: Partial<User>): Promise<User> {
     if (!(await this.fetchById(id))) throw new NotFoundError('User not found');
-    if (data.username && !(await this.verifyValidUsername(data.username)))
+    if (data.username && (await this.checkUsernameConflict(data.username)))
       throw new ConflictError('Username is already in use');
-    if (data.email && !(await this.verifyValidEmail(data.email)))
+    if (data.email && (await this.checkEmailConflict(data.email)))
       throw new ConflictError('Email is already in use');
     if (data.password && !User.isStrongPassword(data.password))
       throw new BadRequestError(
@@ -74,21 +89,21 @@ export class PrismaUserRepository implements UserRepository {
     return passwordMatch;
   }
 
-  private async verifyValidUsername(username: string) {
+  private async checkUsernameConflict(username: string) {
     if (
       await prisma.user.findUnique({
         where: { username },
       })
     )
-      return false;
+      return true;
   }
 
-  private async verifyValidEmail(email: string) {
+  private async checkEmailConflict(email: string) {
     if (
       await prisma.user.findUnique({
         where: { email },
       })
     )
-      return false;
+      return true;
   }
 }

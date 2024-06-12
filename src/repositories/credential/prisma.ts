@@ -105,11 +105,11 @@ export class PrismaCredentialRepository implements CredentialRepository {
     await prisma.credential.delete({ where: { id } });
   }
 
-  private encryptPassword(plainPassword: string, secret: string): string {
+  encryptPassword(plainPassword: string, secret: string): string {
     return AES.encrypt(plainPassword, secret).toString();
   }
 
-  private decryptPassword(encryptedPassword: string, secret: string): string {
+  decryptPassword(encryptedPassword: string, secret: string): string {
     const bytes = AES.decrypt(encryptedPassword, secret);
     return bytes.toString(enc.Utf8);
   }
