@@ -20,7 +20,7 @@ model Vault {
   id     String @id @map("_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
   userId String 
-  name   String @unique
+  name   String
   credential Credential[]
 }
 
@@ -28,7 +28,7 @@ model Credential {
   id String @id @map("_id")
   vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   vaultId String
-  name String @unique
+  name String
   login String
   password String
 }

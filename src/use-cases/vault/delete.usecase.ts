@@ -1,13 +1,10 @@
-import { InternalServerError, isCustomError } from '../../errors/Error';
+import { NotFoundError } from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
 export class DeleteVaultUseCase {
   async execute(id: string) {
-    try {
-      return await prismaRepository.vault.delete(id);
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    const vaultToDelete = await prismaRepository.vault.fetchById(id);
+    if (!vaultToDelete) throw new NotFoundError('Vault was not found');
+    return await prismaRepository.vault.delete(vaultToDelete.id);
   }
 }

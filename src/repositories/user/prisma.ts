@@ -1,14 +1,12 @@
+import { compare, hash } from 'bcryptjs';
 import { prisma } from '../../../prisma';
-import type { User } from '../../entities/user';
+import { User } from '../../entities/user';
 import type { Vault } from '../../entities/vault';
 import {
+  BadRequestError,
   ConflictError,
-  InternalServerError,
   NotFoundError,
-  isCustomError,
 } from '../../errors/Error';
-import { hashPassword } from '../../utils/encryption';
-import { isStrongPassword } from '../../utils/validations';
 import type { UserRepository } from './interface';
 
 export class PrismaUserRepository implements UserRepository {
@@ -20,7 +18,7 @@ export class PrismaUserRepository implements UserRepository {
         id: user.id,
         username: user.username,
         email: user.email,
-        password: await hashPassword(user.password),
+        password: await this.hashPassword(user.password),
         secret: user.secret,
       },
     });
@@ -40,8 +38,11 @@ export class PrismaUserRepository implements UserRepository {
       throw new ConflictError('Username is already in use');
     if (data.email && !(await this.verifyValidEmail(data.email)))
       throw new ConflictError('Email is already in use');
-    if (data.password && isStrongPassword(data.password))
-      data.password = await hashPassword(data.password);
+    if (data.password && !User.isStrongPassword(data.password))
+      throw new BadRequestError(
+        'The password should be at least 8 characters long, contain upper and lower case letters, at least 1 number, and 1 special characters',
+      );
+    data.password = await this.hashPassword(data.password!);
     return await prisma.user.update({
       where: { id },
       data,
@@ -59,6 +60,18 @@ export class PrismaUserRepository implements UserRepository {
       await prisma.vault.delete({ where: { id: vault.id } });
     }
     await prisma.user.delete({ where: { id: userId } });
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    return await hash(password, 10);
+  }
+
+  private async compareHash(
+    inputPassword: string,
+    userPassword: string,
+  ): Promise<boolean> {
+    const passwordMatch = await compare(inputPassword, userPassword);
+    return passwordMatch;
   }
 
   private async verifyValidUsername(username: string) {

@@ -1,13 +1,14 @@
-import { InternalServerError, isCustomError } from '../../errors/Error';
+import {
+  InternalServerError,
+  NotFoundError,
+  isCustomError,
+} from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
 export class DeleteUserUseCase {
   async execute(id: string) {
-    try {
-      return await prismaRepository.user.delete(id);
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    const userToDelete = await prismaRepository.user.fetchById(id);
+    if (!userToDelete) throw new NotFoundError('User was not found');
+    return await prismaRepository.user.delete(userToDelete.id);
   }
 }

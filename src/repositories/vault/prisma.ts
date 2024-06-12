@@ -1,14 +1,13 @@
 import { prisma } from '../../../prisma';
 import type { Vault } from '../../entities/vault';
 import { ConflictError, NotFoundError } from '../../errors/Error';
-import { PrismaUserRepository } from '../user/prisma';
 import type { VaultRepository } from './interface';
 
 export class PrismaVaultRepository implements VaultRepository {
   async save(vault: Vault): Promise<Vault> {
     if (!(await prisma.user.findUnique({ where: { id: vault.userId } })))
       throw new NotFoundError('User not found');
-    if (await this.verifyNonConflictingName(vault.name))
+    if (await this.verifyNonConflictingName(vault.name, vault.userId))
       throw new ConflictError('Username is already in use');
     return await prisma.vault.create({
       data: {
@@ -38,8 +37,12 @@ export class PrismaVaultRepository implements VaultRepository {
   }
 
   async update(id: string, name: string): Promise<Vault> {
-    if (!(await this.fetchById(id))) throw new NotFoundError('Vault not found');
-    if (name && (await this.verifyNonConflictingName(name)))
+    const vaultToUpdate = await this.fetchById(id);
+    if (!vaultToUpdate) throw new NotFoundError('Vault not found');
+    if (
+      name &&
+      (await this.verifyNonConflictingName(name, vaultToUpdate.userId))
+    )
       throw new ConflictError('Name is already in use');
     return await prisma.vault.update({
       where: { id },
@@ -54,10 +57,10 @@ export class PrismaVaultRepository implements VaultRepository {
     await prisma.vault.delete({ where: { id: vaultId } });
   }
 
-  private async verifyNonConflictingName(name: string) {
+  private async verifyNonConflictingName(name: string, userId: string) {
     if (
       await prisma.vault.findFirst({
-        where: { name: name },
+        where: { name, userId },
       })
     )
       return true;
