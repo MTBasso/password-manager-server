@@ -23,7 +23,7 @@ export class CreateUserController {
         .json({ message: 'User created successfully', user: createdUser });
     } catch (error) {
       if (isCustomError(error))
-        return response.status(error.statusCode).json(error.message);
+        return response.status(error.statusCode).json({ error: error.message });
       return response.status(500).json({ message: 'Internal server error' });
     }
   };

@@ -1,13 +1,10 @@
-import { InternalServerError, isCustomError } from '../../errors/Error';
+import { NotFoundError } from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
 export class ListVaultsUseCase {
   async execute(userId: string) {
-    try {
-      return await prismaRepository.vault.listByUserId(userId);
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    const parentUser = await prismaRepository.user.fetchById(userId);
+    if (!parentUser) throw new NotFoundError('Parent user not found');
+    return await prismaRepository.vault.listByUserId(parentUser.id);
   }
 }
