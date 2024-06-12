@@ -1,5 +1,10 @@
+import { hash } from 'bcryptjs';
 import { User } from '../../../src/entities/user';
-import { ConflictError, NotFoundError } from '../../../src/errors/Error';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../../src/errors/Error';
 import { localRepository } from '../inMemory';
 
 describe('User Repository', () => {
@@ -14,11 +19,12 @@ describe('User Repository', () => {
     validUserData.password,
   );
 
+  beforeEach(() => {
+    localRepository.user.users = [];
+  });
+
   describe('save method.', () => {
     let existingUser: User;
-    beforeEach(() => {
-      localRepository.user.users = [];
-    });
 
     it('Should save a User', async () => {
       expect(await localRepository.user.save(newUser)).toBeInstanceOf(User);
@@ -33,7 +39,8 @@ describe('User Repository', () => {
         });
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictError);
-        expect(error.message).toBe('Username already in use');
+        if (error instanceof ConflictError)
+          expect(error.message).toBe('Username already in use');
       }
     });
 
@@ -46,7 +53,8 @@ describe('User Repository', () => {
         });
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictError);
-        expect(error.message).toBe('Email already in use');
+        if (error instanceof ConflictError)
+          expect(error.message).toBe('Email already in use');
       }
     });
 
@@ -57,7 +65,7 @@ describe('User Repository', () => {
 
   describe('fetchById method.', () => {
     let userToFetch: User;
-    beforeAll(async () => {
+    beforeEach(async () => {
       userToFetch = await localRepository.user.save(newUser);
     });
 
@@ -68,11 +76,9 @@ describe('User Repository', () => {
     });
 
     it('Should throw NotFoundError.', async () => {
-      try {
-        await localRepository.user.fetchById('non-existing-id');
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundError);
-      }
+      await expect(
+        localRepository.user.fetchById('non-existing-id'),
+      ).rejects.toThrow(NotFoundError);
     });
 
     afterAll(() => {
@@ -91,6 +97,60 @@ describe('User Repository', () => {
       await expect(
         localRepository.user.fetchById(userToDelete.id),
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('update method.', () => {
+    let userToUpdate: User;
+    let anotherUser: User;
+
+    beforeEach(async () => {
+      userToUpdate = await localRepository.user.save(newUser);
+      anotherUser = await localRepository.user.save(
+        new User('anotherUser', 'anotherUser@test.com', 'AnotherPass123!'),
+      );
+    });
+
+    it('Should update user fields', async () => {
+      const updatedData = {
+        username: 'updatedUser',
+        email: 'updatedUser@test.com',
+        password: 'UpdatedPass123!',
+      };
+      const updatedUser = await localRepository.user.update(
+        userToUpdate.id,
+        updatedData,
+      );
+      expect(updatedUser.username).toBe(updatedData.username);
+      expect(updatedUser.email).toBe(updatedData.email);
+    });
+
+    it('Should throw NotFoundError for invalid id', async () => {
+      await expect(
+        localRepository.user.update('invalid-id', { username: 'newUsername' }),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('Should throw ConflictError for conflicting username', async () => {
+      await expect(
+        localRepository.user.update(userToUpdate.id, {
+          username: anotherUser.username,
+        }),
+      ).rejects.toThrow(ConflictError);
+    });
+
+    it('Should throw ConflictError for conflicting email', async () => {
+      await expect(
+        localRepository.user.update(userToUpdate.id, {
+          email: anotherUser.email,
+        }),
+      ).rejects.toThrow(ConflictError);
+    });
+
+    it('Should throw BadRequestError for weak password', async () => {
+      await expect(
+        localRepository.user.update(userToUpdate.id, { password: 'weak' }),
+      ).rejects.toThrow(BadRequestError);
     });
   });
 });

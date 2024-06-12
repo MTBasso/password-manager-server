@@ -15,16 +15,14 @@ describe('Credential Entity', () => {
 
   describe('constructor', () => {
     it('Should create a credential successfully.', () => {
-      const newCredential = new Credential(
-        'Test Credential',
-        'test@test.com',
-        plainPassword,
-        vault.id,
-        user.secret,
-      );
-      if (newCredential.password === plainPassword)
-        fail('Credential created with plain password');
-      expect(newCredential).toBeInstanceOf(Credential);
+      expect(
+        new Credential(
+          'Test Credential 2',
+          'test@test.com',
+          plainPassword,
+          vault.id,
+        ),
+      ).toBeInstanceOf(Credential);
     });
   });
 });

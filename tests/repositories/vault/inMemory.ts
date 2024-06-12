@@ -12,15 +12,12 @@ export class InMemoryVaultRepository implements VaultRepository {
   vaults: Vault[] = [];
 
   async save(vault: Vault): Promise<Vault> {
-    try {
-      this.verifyNonConflictingName(vault.name);
-      await localRepository.user.fetchById(vault.userId);
-      this.vaults.push(vault);
-      return vault;
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    if (this.verifyNonConflictingName(vault.name, vault.userId))
+      throw new ConflictError('This user already has a vault with this name');
+    const parentUser = await localRepository.user.fetchById(vault.userId);
+    if (!parentUser) throw new NotFoundError('Parent user not found');
+    this.vaults.push(vault);
+    return vault;
   }
 
   async fetchById(id: string): Promise<Vault> {
@@ -30,17 +27,46 @@ export class InMemoryVaultRepository implements VaultRepository {
   }
 
   async listByUserId(userId: string): Promise<Vault[]> {
-    try {
-      await localRepository.user.fetchById(userId);
-      return this.vaults.filter((vault: Vault) => vault.userId === userId);
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    const userToFetch = await localRepository.user.fetchById(userId);
+    if (!userToFetch) throw new NotFoundError('User not found');
+    return this.vaults.filter(
+      (vault: Vault) => vault.userId === userToFetch.id,
+    );
   }
 
-  private verifyNonConflictingName(name: string) {
-    if (this.vaults.some((vault: Vault) => vault.name === name))
+  async update(id: string, name: string): Promise<Vault> {
+    const index = this.vaults.findIndex((vault: Vault) => vault.id === id);
+    if (index === -1) throw new NotFoundError('Vault not found');
+
+    const vaultToUpdate = this.vaults[index];
+
+    const parentUser = await localRepository.user.fetchById(
+      vaultToUpdate.userId,
+    );
+    if (!parentUser) throw new NotFoundError('Parent user not found');
+
+    if (name && this.verifyNonConflictingName(name, parentUser.id))
       throw new ConflictError('This user already has a vault with this name');
+
+    if (name !== undefined) vaultToUpdate.name = name;
+
+    this.vaults[index] = vaultToUpdate;
+    return vaultToUpdate;
+  }
+
+  async delete(id: string): Promise<void> {
+    const vaultToDelete = await localRepository.vault.fetchById(id);
+    if (!vaultToDelete) throw new NotFoundError('Vault not found');
+    this.vaults = this.vaults.filter((vault) => vault.id !== vaultToDelete.id);
+  }
+
+  private verifyNonConflictingName(name: string, userId: string) {
+    if (
+      this.vaults.some(
+        (vault: Vault) => vault.name === name && vault.userId === userId,
+      )
+    )
+      return true;
+    return false;
   }
 }
