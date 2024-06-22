@@ -28,6 +28,7 @@ export class PrismaCredentialRepository implements CredentialRepository {
       data: {
         id: credential.id,
         name: credential.name,
+        website: credential.website,
         login: credential.login,
         password: credential.password,
         vaultId: credential.vaultId,
@@ -89,6 +90,7 @@ export class PrismaCredentialRepository implements CredentialRepository {
       throw new NotFoundError('This Credential user does not exist anymore');
     if (
       data.name &&
+      data.name !== credentialToUpdate.name &&
       (await this.verifyNonConflictingName(data.name, parentVault.id))
     )
       throw new ConflictError(

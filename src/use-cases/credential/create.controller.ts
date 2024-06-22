@@ -5,6 +5,7 @@ import { CreateCredentialUseCase } from './create.usecase';
 interface CreateCredentialControllerRequestProps {
   name: string;
   login: string;
+  website: string;
   password: string;
   vaultId: string;
 }
@@ -30,6 +31,7 @@ export class CreateCredentialController {
     body: CreateCredentialControllerRequestProps,
   ) {
     if (!body.name) throw new BadRequestError('Username is required');
+    if (!body.website) throw new BadRequestError('Website is required');
     if (!body.login) throw new BadRequestError('Login is required');
     if (!body.password) throw new BadRequestError('Password is required');
     if (!body.vaultId) throw new BadRequestError('Vault Id is required');

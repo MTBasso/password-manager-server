@@ -3,11 +3,11 @@ import { NotFoundError } from '../../errors/Error';
 import { prismaRepository } from '../../repositories/prisma';
 
 export class CreateCredentialUseCase {
-  async execute({ name, login, password, vaultId }: Credential) {
+  async execute({ name, website, login, password, vaultId }: Credential) {
     const parentVault = await prismaRepository.vault.fetchById(vaultId);
     if (!parentVault) throw new NotFoundError('Parent vault not found');
     return await prismaRepository.credential.save(
-      new Credential(name, login, password, vaultId),
+      new Credential(name, website, login, password, vaultId),
     );
   }
 }

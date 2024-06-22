@@ -8,6 +8,7 @@ import {
   UnauthorizedError,
 } from '../../../src/errors/Error';
 import type { UserRepository } from '../../../src/repositories/user/interface';
+import type { loginResponse } from '../../../src/repositories/user/prisma';
 import { localRepository } from '../inMemory';
 
 export class InMemoryUserRepository implements UserRepository {
@@ -20,17 +21,17 @@ export class InMemoryUserRepository implements UserRepository {
     return user;
   }
 
-  async login(email: string, password: string): Promise<string> {
+  async login(email: string, password: string): Promise<loginResponse> {
     const user = this.users.find((user: User) => user.email === email);
     if (!user) throw new NotFoundError('User not found');
 
     const isPasswordValid = await this.compareHash(password, user.password);
     if (!isPasswordValid)
       throw new UnauthorizedError('Password does not match');
-
-    return sign({ id: user.id }, process.env.JWT_SECRET as string, {
+    const token = sign({ userId: user.id }, process.env.JWT_SECRET as string, {
       expiresIn: '1h',
     });
+    return { token, userId: user.id };
   }
 
   async fetchById(id: string): Promise<User> {
