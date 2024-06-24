@@ -8,29 +8,51 @@ import {
   UnauthorizedError,
 } from '../../../src/errors/Error';
 import type { UserRepository } from '../../../src/repositories/user/interface';
-import type { loginResponse } from '../../../src/repositories/user/prisma';
-import { localRepository } from '../inMemory';
+import type {
+  SaveUserResponseType,
+  loginResponse,
+} from '../../../src/repositories/user/prisma';
 
 export class InMemoryUserRepository implements UserRepository {
+  LOCAL_JWT = 'test';
   users: User[] = [];
 
-  async save(user: User): Promise<User> {
-    this.verifyNonConflictingUsername(user.username);
-    this.verifyNonConflictingEmail(user.email);
+  async save(user: User): Promise<SaveUserResponseType> {
+    if (await this.checkUsernameConflict(user.username))
+      throw new ConflictError('Username is already in use');
+
+    if (await this.checkEmailConflict(user.email))
+      throw new ConflictError('Email is already in use');
+
+    user.password = await this.hashPassword(user.password);
     this.users.push(user);
-    return user;
+
+    const token = sign(
+      { userId: user.id },
+      process.env.JWT_SECRET ?? this.LOCAL_JWT,
+      {
+        expiresIn: '1h',
+      },
+    );
+
+    return { user, token };
   }
 
   async login(email: string, password: string): Promise<loginResponse> {
     const user = this.users.find((user: User) => user.email === email);
     if (!user) throw new NotFoundError('User not found');
 
-    const isPasswordValid = await this.compareHash(password, user.password);
-    if (!isPasswordValid)
+    if (!(await this.compareHash(password, user.password)))
       throw new UnauthorizedError('Password does not match');
-    const token = sign({ userId: user.id }, process.env.JWT_SECRET as string, {
-      expiresIn: '1h',
-    });
+
+    const token = sign(
+      { userId: user.id },
+      process.env.JWT_SECRET ?? this.LOCAL_JWT,
+      {
+        expiresIn: '1h',
+      },
+    );
+
     return { token, userId: user.id };
   }
 
@@ -46,27 +68,35 @@ export class InMemoryUserRepository implements UserRepository {
 
     const userToUpdate = this.users[index];
 
-    if (data.username && this.verifyNonConflictingUsername(data.username))
-      throw new ConflictError('Username already in use');
-    userToUpdate.username = data.username!;
+    if (data.username) {
+      if (await this.checkUsernameConflict(data.username))
+        throw new ConflictError('Username already in use');
+      userToUpdate.username = data.username;
+    }
 
-    if (data.email && this.verifyNonConflictingEmail(data.email))
-      throw new ConflictError('Email already in use');
-    userToUpdate.email = data.email!;
+    if (data.email) {
+      if (await this.checkEmailConflict(data.email))
+        throw new ConflictError('Email already in use');
+      userToUpdate.email = data.email!;
+    }
 
-    if (data.password && !User.isStrongPassword(data.password))
-      throw new BadRequestError(
-        'The password should be at least 8 characters long, contain upper and lower case letters, at least 1 number, and 1 special characters',
-      );
-    userToUpdate.password = await this.hashPassword(data.password!);
+    if (data.password) {
+      if (!User.isStrongPassword(data.password))
+        throw new BadRequestError(
+          'The password should be at least 8 characters long, contain upper and lower case letters, at least 1 number, and 1 special characters',
+        );
+      userToUpdate.password = await this.hashPassword(data.password!);
+    }
 
     this.users[index] = userToUpdate;
+
     return userToUpdate;
   }
 
-  async delete(id: string): Promise<void> {
-    const userToDelete = await localRepository.user.fetchById(id);
+  async delete(userId: string): Promise<void> {
+    const userToDelete = await this.fetchById(userId);
     if (!userToDelete) throw new NotFoundError('User not found');
+
     this.users = this.users.filter((user) => user.id !== userToDelete.id);
   }
 
@@ -78,18 +108,14 @@ export class InMemoryUserRepository implements UserRepository {
     inputPassword: string,
     userPassword: string,
   ): Promise<boolean> {
-    const passwordMatch = await compare(inputPassword, userPassword);
-    return passwordMatch;
+    return await compare(inputPassword, userPassword);
   }
 
-  private verifyNonConflictingUsername(username: string) {
-    if (this.users.some((user: User) => user.username === username))
-      return true;
-    return false;
+  private async checkUsernameConflict(username: string): Promise<boolean> {
+    return this.users.some((user: User) => user.username === username);
   }
 
-  private verifyNonConflictingEmail(email: string) {
-    if (this.users.some((user: User) => user.email === email)) return true;
-    return false;
+  private async checkEmailConflict(email: string): Promise<boolean> {
+    return this.users.some((user: User) => user.email === email);
   }
 }

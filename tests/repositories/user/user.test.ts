@@ -27,34 +27,39 @@ describe('User Repository', () => {
     let existingUser: User;
 
     it('Should save a User', async () => {
-      expect(await localRepository.user.save(newUser)).toBeInstanceOf(User);
+      const savedUserResponse = await localRepository.user.save(newUser);
+      expect(savedUserResponse.user).toBeInstanceOf(User);
     });
 
     it('Should throw ConflictError for conflicting username', async () => {
-      existingUser = await localRepository.user.save(newUser);
+      existingUser = (await localRepository.user.save(newUser)).user;
       try {
         await localRepository.user.save({
           ...existingUser,
           email: 'different@email.com',
         });
       } catch (error) {
-        expect(error).toBeInstanceOf(ConflictError);
-        if (error instanceof ConflictError)
-          expect(error.message).toBe('Username already in use');
+        if (error instanceof ConflictError) {
+          expect(error.message).toBe('Username is already in use');
+        } else {
+          fail('Expected ConflictError');
+        }
       }
     });
 
     it('Should throw ConflictError for conflicting email', async () => {
-      existingUser = await localRepository.user.save(newUser);
+      existingUser = (await localRepository.user.save(newUser)).user;
       try {
         await localRepository.user.save({
           ...existingUser,
           username: 'differentUsername',
         });
       } catch (error) {
-        expect(error).toBeInstanceOf(ConflictError);
-        if (error instanceof ConflictError)
-          expect(error.message).toBe('Email already in use');
+        if (error instanceof ConflictError) {
+          expect(error.message).toBe('Email is already in use');
+        } else {
+          fail('Expected ConflictError');
+        }
       }
     });
 
@@ -66,13 +71,12 @@ describe('User Repository', () => {
   describe('fetchById method.', () => {
     let userToFetch: User;
     beforeEach(async () => {
-      userToFetch = await localRepository.user.save(newUser);
+      userToFetch = (await localRepository.user.save(newUser)).user;
     });
 
     it('Should find a user by its id.', async () => {
-      expect(await localRepository.user.fetchById(userToFetch.id)).toBe(
-        userToFetch,
-      );
+      const fetchedUser = await localRepository.user.fetchById(userToFetch.id);
+      expect(fetchedUser).toBe(userToFetch);
     });
 
     it('Should throw NotFoundError.', async () => {
@@ -89,7 +93,7 @@ describe('User Repository', () => {
   describe('delete method.', () => {
     let userToDelete: User;
     beforeEach(async () => {
-      userToDelete = await localRepository.user.save(newUser);
+      userToDelete = (await localRepository.user.save(newUser)).user;
     });
 
     it('Should delete a user successfully', async () => {
@@ -105,10 +109,12 @@ describe('User Repository', () => {
     let anotherUser: User;
 
     beforeEach(async () => {
-      userToUpdate = await localRepository.user.save(newUser);
-      anotherUser = await localRepository.user.save(
-        new User('anotherUser', 'anotherUser@test.com', 'AnotherPass123!'),
-      );
+      userToUpdate = (await localRepository.user.save(newUser)).user;
+      anotherUser = (
+        await localRepository.user.save(
+          new User('anotherUser', 'anotherUser@test.com', 'AnotherPass123!'),
+        )
+      ).user;
     });
 
     it('Should update user fields', async () => {

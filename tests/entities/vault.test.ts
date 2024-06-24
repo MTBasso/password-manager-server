@@ -11,7 +11,7 @@ describe('Vault Entity', () => {
 
   describe('constructor', () => {
     it('Should create a Vault successfully.', () => {
-      expect(new Vault('Vault Name', user.id)).toBeInstanceOf(Vault);
+      expect(new Vault('Vault Name', 'green', user.id)).toBeInstanceOf(Vault);
     });
   });
 });

@@ -1,34 +1,33 @@
 import { AES, enc } from 'crypto-js';
 import type { Credential } from '../../../src/entities/credential';
-import {
-  ConflictError,
-  InternalServerError,
-  NotFoundError,
-  isCustomError,
-} from '../../../src/errors/Error';
+import { ConflictError, NotFoundError } from '../../../src/errors/Error';
 import type { CredentialRepository } from '../../../src/repositories/credential/interface';
 import { localRepository } from '../inMemory';
 
 export class InMemoryCredentialRepository implements CredentialRepository {
-  credentials: Credential[] = [];
+  public credentials: Credential[] = [];
 
   async save(credential: Credential): Promise<Credential> {
     if (this.verifyNonConflictingName(credential.name, credential.vaultId))
       throw new ConflictError(
         'This vault already has a credential with this name',
       );
+
     const parentVault = await localRepository.vault.fetchById(
       credential.vaultId,
     );
     if (!parentVault) throw new NotFoundError('Parent vault not found');
+
     const parentUser = await localRepository.user.fetchById(parentVault.userId);
     if (!parentUser) throw new NotFoundError('Parent user not found');
-    const savedCredential: Credential = {
-      ...credential,
-      password: this.encryptPassword(credential.password, parentUser.secret),
-    };
-    this.credentials.push(savedCredential);
-    return savedCredential;
+
+    credential.password = this.encryptPassword(
+      credential.password,
+      parentUser.secret,
+    );
+
+    this.credentials.push(credential);
+    return credential;
   }
 
   async fetchById(id: string): Promise<Credential> {
@@ -42,39 +41,42 @@ export class InMemoryCredentialRepository implements CredentialRepository {
   async readCredential(id: string): Promise<Credential> {
     const credential = await this.fetchById(id);
     if (!credential) throw new NotFoundError('Credential not found');
+
     const parentVault = await localRepository.vault.fetchById(
       credential.vaultId,
     );
     if (!parentVault) throw new NotFoundError('Parent vault not found');
+
     const parentUser = await localRepository.user.fetchById(parentVault.userId);
     if (!parentUser) throw new NotFoundError('Parent user not found');
-    const updatedCredential: Credential = {
-      ...credential,
-      password: this.decryptPassword(credential.password, parentUser.secret),
-    };
-    this.credentials.push(updatedCredential);
-    return updatedCredential;
+
+    credential.password = this.decryptPassword(
+      credential.password,
+      parentUser.secret,
+    );
+
+    return credential;
   }
 
   async listByVaultId(vaultId: string): Promise<Credential[]> {
-    try {
-      await localRepository.vault.fetchById(vaultId);
-      return this.credentials.filter(
-        (credential: Credential) => credential.vaultId === vaultId,
-      );
-    } catch (error) {
-      if (isCustomError(error)) throw error;
-      throw new InternalServerError();
-    }
+    const fetchedVault = await localRepository.vault.fetchById(vaultId);
+    if (!fetchedVault) throw new NotFoundError('Parent vault not found');
+
+    const fetchedCredentialList = this.credentials.filter(
+      (credential: Credential) => credential.vaultId === vaultId,
+    );
+    if (!fetchedCredentialList)
+      throw new NotFoundError('No Credentials were found');
+
+    return fetchedCredentialList;
   }
 
-  async update(id: string, data: Partial<Credential>): Promise<Credential> {
-    const index = this.credentials.findIndex(
-      (credential: Credential) => credential.id === id,
-    );
-    if (index === -1) throw new NotFoundError('Credential not found');
-
-    const credentialToUpdate = this.credentials[index];
+  async update(
+    credentialId: string,
+    data: Partial<Credential>,
+  ): Promise<Credential> {
+    const credentialToUpdate = await this.fetchById(credentialId);
+    if (!credentialToUpdate) throw new NotFoundError('Credential not found');
 
     const parentVault = await localRepository.vault.fetchById(
       credentialToUpdate.vaultId,
@@ -86,12 +88,17 @@ export class InMemoryCredentialRepository implements CredentialRepository {
     if (!parentUser)
       throw new NotFoundError('This Credential user does not exist anymore');
 
-    if (data.name && this.verifyNonConflictingName(data.name, parentVault.id))
+    if (
+      data.name &&
+      data.name !== credentialToUpdate.name &&
+      this.verifyNonConflictingName(data.name, parentVault.id)
+    )
       throw new ConflictError(
         'This vault already has a credential with this name',
       );
 
     if (data.name !== undefined) credentialToUpdate.name = data.name;
+    if (data.website !== undefined) credentialToUpdate.website = data.website;
     if (data.login !== undefined) credentialToUpdate.login = data.login;
     if (data.password !== undefined)
       credentialToUpdate.password = this.encryptPassword(
@@ -99,13 +106,18 @@ export class InMemoryCredentialRepository implements CredentialRepository {
         parentUser.secret,
       );
 
-    this.credentials[index] = credentialToUpdate;
+    this.credentials = this.credentials.map((credential) =>
+      credential.id === credentialId ? credentialToUpdate : credential,
+    );
+
     return credentialToUpdate;
   }
 
-  async delete(id: string): Promise<void> {
-    const credentialToDelete = await localRepository.credential.fetchById(id);
+  async delete(credentialId: string): Promise<void> {
+    const credentialToDelete =
+      await localRepository.credential.fetchById(credentialId);
     if (!credentialToDelete) throw new NotFoundError('Credential not found');
+
     this.credentials = this.credentials.filter(
       (credential) => credential.id !== credentialToDelete.id,
     );
@@ -121,12 +133,9 @@ export class InMemoryCredentialRepository implements CredentialRepository {
   }
 
   private verifyNonConflictingName(name: string, vaultId: string) {
-    if (
-      this.credentials.some(
-        (credential: Credential) =>
-          credential.name === name && credential.vaultId === vaultId,
-      )
-    )
-      return true;
+    return this.credentials.some(
+      (credential: Credential) =>
+        credential.name === name && credential.vaultId === vaultId,
+    );
   }
 }

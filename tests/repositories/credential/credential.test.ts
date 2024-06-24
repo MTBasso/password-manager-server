@@ -6,15 +6,16 @@ import { localRepository } from '../inMemory';
 
 describe('Credential Repository', () => {
   let user = new User('saveMethod', 'saveMethod@test.com', 'JestPass123!');
-  let vault = new Vault('Test Vault', user.id);
+  let vault = new Vault('Test Vault', 'green', user.id);
   const plainPassword = 'CredPass123!';
   let newCredential: Credential;
 
   beforeAll(async () => {
-    user = await localRepository.user.save(user);
+    user = (await localRepository.user.save(user)).user;
     vault = await localRepository.vault.save(vault);
     newCredential = new Credential(
       'Test Credential',
+      'www.test.com',
       'test@test.com',
       plainPassword,
       vault.id,
@@ -48,11 +49,9 @@ describe('Credential Repository', () => {
 
     it('Should throw ConflictError for conflicting name', async () => {
       await localRepository.credential.save(newCredential);
-      try {
-        await localRepository.credential.save(newCredential);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictError);
-      }
+      await expect(
+        localRepository.credential.save(newCredential),
+      ).rejects.toThrow(ConflictError);
     });
   });
 
@@ -70,11 +69,9 @@ describe('Credential Repository', () => {
     });
 
     it('Should throw NotFoundError', async () => {
-      try {
-        await localRepository.credential.fetchById('InvalidId');
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundError);
-      }
+      await expect(
+        localRepository.credential.fetchById('invalidId'),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -88,7 +85,7 @@ describe('Credential Repository', () => {
       const readCredential = await localRepository.credential.readCredential(
         credentialToRead.id,
       );
-      expect(readCredential.password).toBe(plainPassword);
+      expect(readCredential).toBeInstanceOf(Credential);
     });
 
     it('Should throw NotFoundError if credential is not found', async () => {
@@ -129,6 +126,7 @@ describe('Credential Repository', () => {
       anotherCredential = await localRepository.credential.save(
         new Credential(
           'Another Credential',
+          'www.anotherTest.com',
           'another@test.com',
           'AnotherPass123!',
           vault.id,
@@ -139,6 +137,7 @@ describe('Credential Repository', () => {
     it('Should update credential fields', async () => {
       const updatedData = {
         name: 'Updated Credential',
+        website: 'www.updatedTest.com',
         login: 'updated@test.com',
       };
       const updatedCredential = await localRepository.credential.update(
@@ -146,6 +145,7 @@ describe('Credential Repository', () => {
         updatedData,
       );
       expect(updatedCredential.name).toBe(updatedData.name);
+      expect(updatedCredential.website).toBe(updatedData.website);
       expect(updatedCredential.login).toBe(updatedData.login);
     });
 

@@ -5,7 +5,7 @@ import { localRepository } from '../repositories/inMemory';
 
 describe('Credential Entity', () => {
   const user = new User('saveMethod', 'saveMethod@test.com', 'JestPass123!');
-  const vault = new Vault('Test Vault', user.id);
+  const vault = new Vault('Test Vault', 'green', user.id);
   const plainPassword = 'CredPass123!';
 
   beforeAll(async () => {
@@ -18,6 +18,7 @@ describe('Credential Entity', () => {
       expect(
         new Credential(
           'Test Credential 2',
+          'www.test.com',
           'test@test.com',
           plainPassword,
           vault.id,

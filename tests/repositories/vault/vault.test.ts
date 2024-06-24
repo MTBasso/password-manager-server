@@ -4,16 +4,20 @@ import { ConflictError, NotFoundError } from '../../../src/errors/Error';
 import { localRepository } from '../inMemory';
 
 describe('Vault Repository', () => {
-  let user = new User('saveMethod', 'saveMethod@test.com', 'JestPass123!');
+  let user: User;
   let existingVault: Vault;
   let newVault: Vault;
 
   beforeAll(async () => {
-    user = await localRepository.user.save(user);
+    user = (
+      await localRepository.user.save(
+        new User('saveMethod', 'saveMethod@test.com', 'JestPass123!'),
+      )
+    ).user;
     existingVault = await localRepository.vault.save(
-      new Vault('existingVault', user.id),
+      new Vault('existingVault', 'green', user.id),
     );
-    newVault = new Vault('New Vault', user.id);
+    newVault = new Vault('New Vault', 'lime', user.id);
   });
 
   afterEach(() => {
@@ -21,17 +25,18 @@ describe('Vault Repository', () => {
   });
 
   describe('save method.', () => {
-    it('Should save a Vault', async () => {
-      expect(await localRepository.vault.save(newVault)).toBeInstanceOf(Vault);
+    it('Should save a new Vault', async () => {
+      const savedVault = await localRepository.vault.save(newVault);
+      expect(savedVault).toBeInstanceOf(Vault);
     });
 
-    it('Should throw not found error for non existent user', async () => {
+    it('should throw NotFoundError for non-existent user', async () => {
       await expect(
         localRepository.vault.save({ ...newVault, userId: 'non-existing-id' }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it('Should throw conflict error for conflicting name', async () => {
+    it('should throw ConflictError for conflicting vault name', async () => {
       await localRepository.vault.save(newVault);
       await expect(localRepository.vault.save(newVault)).rejects.toThrow(
         ConflictError,
@@ -41,18 +46,19 @@ describe('Vault Repository', () => {
 
   describe('fetchById method.', () => {
     let vaultToFetch: Vault;
+
     beforeAll(async () => {
       vaultToFetch = await localRepository.vault.save(newVault);
     });
 
-    it('Should find a vault by its id.', async () => {
+    it('should fetch a vault by its ID', async () => {
       const fetchedVault = await localRepository.vault.fetchById(
         vaultToFetch.id,
       );
       expect(fetchedVault).toBe(vaultToFetch);
     });
 
-    it('Should throw NotFoundError.', async () => {
+    it('should throw NotFoundError for non-existent vault ID', async () => {
       await expect(
         localRepository.vault.fetchById('non-existing-id'),
       ).rejects.toThrow(NotFoundError);
@@ -66,7 +72,7 @@ describe('Vault Repository', () => {
       vaultToUpdate = await localRepository.vault.save(newVault);
     });
 
-    it("Should update a vault's name", async () => {
+    it("should update a vault's name", async () => {
       const updatedName = 'Updated Vault';
       const updatedVault = await localRepository.vault.update(
         vaultToUpdate.id,
@@ -75,15 +81,15 @@ describe('Vault Repository', () => {
       expect(updatedVault.name).toBe(updatedName);
     });
 
-    it('Should throw NotFoundError for invalid id', async () => {
+    it('should throw NotFoundError for invalid vault ID', async () => {
       await expect(
         localRepository.vault.update('invalid-id', 'New Name'),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it('Should throw ConflictError for conflicting name', async () => {
+    it('should throw ConflictError for conflicting vault name', async () => {
       const anotherVault = await localRepository.vault.save(
-        new Vault('Another Vault', user.id),
+        new Vault('Another Vault', 'orange', user.id),
       );
       await expect(
         localRepository.vault.update(vaultToUpdate.id, anotherVault.name),
@@ -98,14 +104,14 @@ describe('Vault Repository', () => {
       vaultToDelete = await localRepository.vault.save(newVault);
     });
 
-    it('Should delete a vault successfully', async () => {
+    it('should delete a vault successfully', async () => {
       await localRepository.vault.delete(vaultToDelete.id);
       await expect(
         localRepository.vault.fetchById(vaultToDelete.id),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it('Should throw NotFoundError for invalid id', async () => {
+    it('should throw NotFoundError for non-existent vault ID', async () => {
       await expect(localRepository.vault.delete('invalid-id')).rejects.toThrow(
         NotFoundError,
       );

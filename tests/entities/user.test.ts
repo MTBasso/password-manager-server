@@ -28,8 +28,11 @@ describe('User Entity', () => {
         );
         if (user) fail('No user expected');
       } catch (error) {
-        expect(error).toBeInstanceOf(BadRequestError);
-        expect(error.message).toBe('Invalid email.');
+        if (error instanceof BadRequestError) {
+          expect(error.message).toBe('Invalid email.');
+        } else {
+          fail('Expected BadRequestError');
+        }
       }
     });
 
@@ -42,10 +45,13 @@ describe('User Entity', () => {
         );
         if (user) fail('No User expected');
       } catch (error) {
-        expect(error).toBeInstanceOf(BadRequestError);
-        expect(error.message).toBe(
-          'The password should be at least 8 characters long, contain upper and lower case letters, at least 1 number, and 1 special characters',
-        );
+        if (error instanceof BadRequestError) {
+          expect(error.message).toBe(
+            'The password should be at least 8 characters long, contain upper and lower case letters, at least 1 number, and 1 special characters',
+          );
+        } else {
+          fail('Expected BadRequestError');
+        }
       }
     });
   });
