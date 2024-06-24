@@ -5,6 +5,6 @@ export interface VaultRepository {
   save(vault: Vault): Promise<Vault>;
   listByUserId(userId: string): Promise<Vault[]>;
   fetchById(id: string): Promise<Vault>;
-  update(id: string, name: string): Promise<Vault>;
+  update(id: string, name?: string, color?: string): Promise<Vault>;
   delete(id: string): Promise<void>;
 }
