@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = "mongodb+srv://MTBasso:2621@cluster0.negslgp.mongodb.net/prisma?retryWrites=true&w=majority&appName=Cluster0"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model User {work
+model User {
   id       String @id @map("_id")
-  username String @unique
-  email    String @unique
+  username String 
+  email    String 
   password String
   secret   String
   vault    Vault[]
@@ -21,6 +21,7 @@ model Vault {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
   userId String 
   name   String
+  color  String
   credential Credential[]
 }
 

@@ -4,6 +4,9 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsnd --respawn src/http/server.ts",
+    "build": "tsup src",
+    "generate": "prisma generate --schema=./prisma/schema.prisma",
+    "migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "format": "biome format . --write",
     "lint": "biome lint . --write",
     "test": "jest"
@@ -24,6 +27,8 @@
     "jsonwebtoken": "^9.0.2",
     "reflect-metadata": "^0.2.1",
     "ts-jest": "^29.1.4",
+    "tsup": "^8.1.0",
+    "cors": "^2.8.5",
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {
