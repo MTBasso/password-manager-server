@@ -12,18 +12,26 @@ interface CreateUserControllerRequestProps {
 export class CreateUserController {
   handle = async (request: Request, response: Response): Promise<Response> => {
     const useCase = new CreateUserUseCase();
+
     try {
       this.validateCreateUserControllerBody(request.body);
       const { username, email, password } = request.body;
+
       const createdUser = await useCase.execute(
         new User(username, email, password),
       );
-      return response
-        .status(201)
-        .json({ message: 'User created successfully', user: createdUser });
+      const { token, ...userWithoutToken } = createdUser;
+      const responseUser = userWithoutToken.user;
+
+      return response.status(201).json({
+        message: 'User created successfully',
+        token: createdUser.token,
+        user: responseUser,
+      });
     } catch (error) {
       if (isCustomError(error))
         return response.status(error.statusCode).json({ error: error.message });
+
       return response.status(500).json({ message: 'Internal server error' });
     }
   };

@@ -6,6 +6,7 @@ export class UpdateUserUseCase {
   async execute(id: string, data: Partial<User>) {
     const userToUpdate = await prismaRepository.user.fetchById(id);
     if (!userToUpdate) throw new NotFoundError('User not found');
+
     return prismaRepository.user.update(userToUpdate.id, data);
   }
 }

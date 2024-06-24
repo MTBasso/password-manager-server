@@ -13,16 +13,25 @@ interface CreateCredentialControllerRequestProps {
 export class CreateCredentialController {
   handle = async (request: Request, response: Response): Promise<Response> => {
     const useCase = new CreateCredentialUseCase();
+
     try {
       this.validateCreateCredentialControllerBody(request.body);
       const createdCredential = await useCase.execute(request.body);
+
       return response.status(201).json({
         message: 'Credential created successfully',
-        credential: createdCredential,
+        credential: {
+          id: createdCredential.id,
+          name: createdCredential.name,
+          website: createdCredential.website,
+          login: createdCredential.login,
+          encryptedPassword: createdCredential.password,
+        },
       });
     } catch (error) {
       if (isCustomError(error))
         return response.status(error.statusCode).json({ error: error.message });
+
       return response.status(500).json({ message: 'Internal server error' });
     }
   };

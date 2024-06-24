@@ -6,6 +6,7 @@ export class ReadCredentialUseCase {
     const fetchedCredential =
       await prismaRepository.credential.readCredential(id);
     if (!fetchedCredential) throw new NotFoundError('Credential not found');
+
     return fetchedCredential;
   }
 }

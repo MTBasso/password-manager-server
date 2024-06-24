@@ -5,30 +5,35 @@ import { CreateVaultUseCase } from './create.usecase';
 
 interface CreateVaultControllerRequestProps {
   name: string;
-  userId: string;
+  color: string;
 }
 
 export class CreateVaultController {
   handle = async (request: Request, response: Response): Promise<Response> => {
     const useCase = new CreateVaultUseCase();
+
     try {
-      this.validateCreateVaultControllerBody(request.body);
-      const { name, userId } = request.body;
-      const createdVault = await useCase.execute(new Vault(name, userId));
+      const userId = request.headers.userid;
+      this.validateCreateVaultRequest(request.body);
+      const { name, color } = request.body;
+
+      const createdVault = await useCase.execute(
+        new Vault(name, color, userId as string),
+      );
+
       return response
         .status(201)
         .json({ message: 'Vault created successfully', vault: createdVault });
     } catch (error) {
       if (isCustomError(error))
         return response.status(error.statusCode).json({ error: error.message });
+
       return response.status(500).json({ message: 'Internal server error' });
     }
   };
 
-  private validateCreateVaultControllerBody(
-    body: CreateVaultControllerRequestProps,
-  ) {
-    if (!body.name) throw new BadRequestError('Username is required');
-    if (!body.userId) throw new BadRequestError('Email is required');
+  private validateCreateVaultRequest(body: CreateVaultControllerRequestProps) {
+    if (!body.name) throw new BadRequestError('Vault Name is required');
+    if (!body.color) throw new BadRequestError('Vault Color is required');
   }
 }
