@@ -12,18 +12,22 @@ export class PrismaCredentialRepository implements CredentialRepository {
       throw new ConflictError(
         'This vault already has a credential with this name',
       );
+
     const parentVault = await prisma.vault.findUnique({
       where: { id: credential.vaultId },
     });
     if (!parentVault) throw new NotFoundError('Parent vault not found');
+
     const parentUser = await prisma.user.findUnique({
       where: { id: parentVault.userId },
     });
     if (!parentUser) throw new NotFoundError('Parent user not found');
+
     credential.password = this.encryptPassword(
       credential.password,
       parentUser.secret,
     );
+
     return await prisma.credential.create({
       data: {
         id: credential.id,
@@ -41,14 +45,17 @@ export class PrismaCredentialRepository implements CredentialRepository {
       where: { id },
     });
     if (!fetchedCredential) throw new NotFoundError('Credential not found');
+
     const parentVault = await prisma.vault.findUnique({
       where: { id: fetchedCredential.vaultId },
     });
     if (!parentVault) throw new NotFoundError('Parent vault not found');
+
     const parentUser = await prisma.user.findUnique({
       where: { id: parentVault.userId },
     });
     if (!parentUser) throw new NotFoundError('Parent user not found');
+
     return {
       ...fetchedCredential,
       password: this.decryptPassword(
@@ -63,6 +70,7 @@ export class PrismaCredentialRepository implements CredentialRepository {
       where: { id },
     });
     if (!fetchedCredential) throw new NotFoundError('Credential not found');
+
     return fetchedCredential;
   }
 
@@ -72,22 +80,26 @@ export class PrismaCredentialRepository implements CredentialRepository {
     });
     if (!fetchedCredentialList)
       throw new NotFoundError('This vault has no credentials');
+
     return fetchedCredentialList;
   }
 
   async update(id: string, data: Partial<Credential>): Promise<Credential> {
     const credentialToUpdate = await this.fetchById(id);
     if (!credentialToUpdate) throw new NotFoundError('Credential not found');
+
     const parentVault = await prisma.vault.findUnique({
       where: { id: credentialToUpdate.vaultId },
     });
     if (!parentVault)
       throw new NotFoundError('This Credential vault does not exist anymore');
+
     const parentUser = await prisma.user.findUnique({
       where: { id: parentVault.userId },
     });
     if (!parentUser)
       throw new NotFoundError('This Credential user does not exist anymore');
+
     if (
       data.name &&
       data.name !== credentialToUpdate.name &&
@@ -96,14 +108,17 @@ export class PrismaCredentialRepository implements CredentialRepository {
       throw new ConflictError(
         'This vault already has a credential with this name',
       );
+
     if (data.password)
       data.password = this.encryptPassword(data.password, parentUser.secret);
+
     return await prisma.credential.update({ where: { id }, data });
   }
 
   async delete(id: string): Promise<void> {
     if (!(await this.fetchById(id)))
       throw new NotFoundError('Credential not found');
+
     await prisma.credential.delete({ where: { id } });
   }
 
