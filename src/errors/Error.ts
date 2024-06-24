@@ -43,13 +43,6 @@ export class NotFoundError extends ApiError {
   }
 }
 
-export class MethodNotAllowedError extends ApiError {
-  constructor(message: string) {
-    super(message, 405);
-    this.name = 'MethodNotAllowedError';
-  }
-}
-
 export class ConflictError extends ApiError {
   constructor(message: string) {
     super(message, 409);
@@ -61,26 +54,5 @@ export class InternalServerError extends ApiError {
   constructor(message = 'Internal server error.') {
     super(message, 500);
     this.name = 'InternalServerError';
-  }
-}
-
-export class NotImplemented extends ApiError {
-  constructor(message: string) {
-    super(message, 501);
-    this.name = 'NotImplemented';
-  }
-}
-
-export class BadGateway extends ApiError {
-  constructor(message: string) {
-    super(message, 502);
-    this.name = 'BadGateway';
-  }
-}
-
-export class ServiceUnavailable extends ApiError {
-  constructor(message: string) {
-    super(message, 503);
-    this.name = 'ServiceUnavailable';
   }
 }
