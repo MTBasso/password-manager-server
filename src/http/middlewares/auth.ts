@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { type VerifyErrors, verify } from 'jsonwebtoken';
-import { BadRequestError, UnauthorizedError } from '../../errors/Error';
+import { UnauthorizedError } from '../../errors/Error';
 
 export const authenticateToken = async (
   request: Request,
@@ -39,9 +39,9 @@ export const verifyUserId = (
   next: NextFunction,
 ) => {
   try {
-    if (!request.params.userId)
+    if (!request.headers.userid)
       return response.status(400).json({
-        BadRequestError: 'User id is missing from the url parameters',
+        BadRequestError: 'Missing UserId header',
       });
 
     if (request.user === undefined)
@@ -49,7 +49,7 @@ export const verifyUserId = (
         .status(400)
         .json({ BadRequestError: "This request's user is undefined" });
 
-    if (request.user.id !== request.params.userId)
+    if (request.user.id !== request.headers.userid)
       return response.status(401).json({
         UnauthorizedError: 'Token user ID does not match request user ID',
       });

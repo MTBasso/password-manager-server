@@ -17,6 +17,7 @@ credentialRouter.post(
 );
 credentialRouter.get(
   '/read/:credentialId',
+  verifyUserId,
   new ReadCredentialController().handle,
 );
 credentialRouter.get(
