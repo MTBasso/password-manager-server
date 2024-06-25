@@ -25,7 +25,7 @@ export class UpdateUserController {
       if (isCustomError(error))
         return response.status(error.statusCode).json({ error: error.message });
 
-      return response.status(500).json({ message: 'Internal server error' });
+      return response.status(500).json({ error: 'Internal server error' });
     }
   };
 
