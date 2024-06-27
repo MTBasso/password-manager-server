@@ -5,6 +5,7 @@ import { UpdateCredentialUseCase } from './update.usecase';
 interface UpdateCredentialControllerRequestProps {
   name?: string;
   login?: string;
+  website?: string;
   password?: string;
 }
 
@@ -36,7 +37,7 @@ export class UpdateCredentialController {
   private validateUpdateVaultControllerBody(
     body: UpdateCredentialControllerRequestProps,
   ) {
-    if (!body.name && !body.login && !body.password)
+    if (!body.name && !body.login && !body.website && !body.password)
       throw new BadRequestError('At least one field is required');
   }
 }
